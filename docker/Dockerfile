@@ -23,6 +23,9 @@ RUN wget https://get.symfony.com/cli/installer -O - | bash
 
 RUN mv /root/.symfony/bin/symfony /usr/local/bin/symfony
 
+# Create symfony project
+RUN composer create-project symfony/website-skeleton:^4.4 .
+
 COPY . /
 
 ENTRYPOINT [ "docker/entrypoint.sh" ]
