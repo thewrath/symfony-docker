@@ -18,14 +18,12 @@ RUN docker-php-ext-install -j$(nproc) pdo pdo_mysql
 
 SHELL ["/bin/bash", "-c"]
 
-# Install new symfony tool
-RUN wget https://get.symfony.com/cli/installer -O - | bash
+# install Symfony Flex globally to speed up download of Composer packages (parallelized prefetching)
+RUN set -eux; \
+	composer global require "symfony/flex" --prefer-dist --no-progress --no-suggest --classmap-authoritative; \
+	composer clear-cache
 
-RUN mv /root/.symfony/bin/symfony /usr/local/bin/symfony
+COPY . /var/www/app
 
-# Create symfony project
-RUN composer create-project symfony/website-skeleton:^4.4 .
-
-COPY . /
-
-ENTRYPOINT [ "docker/entrypoint.sh" ]
+RUN chmod +x ./var/www/app/docker/entrypoint.sh
+ENTRYPOINT [ "./var/www/app/docker/entrypoint.sh" ]
