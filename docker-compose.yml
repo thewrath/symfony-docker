@@ -1,0 +1,74 @@
+version: "3.4"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    healthcheck:
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    networks:
+      - internal
+    volumes:
+      - .:/app/
+    depends_on:
+      - mysql
+    labels:
+      - "traefik.front.frontend.rule=Host:symfony.docker.test"
+      - "traefik.front.port=80"
+      - "traefik.docker.network=symfony_internal"
+      - "traefik.enable=true"
+
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: dbquizmanager
+    ports:  
+      - "${MYSQL_PORT:-3307}:3306"
+    networks:
+      - internal
+    volumes:
+      - "mysql-data:/var/lib/mysql"
+  
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:4.7
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: root
+    depends_on:
+      - mysql
+    networks:
+      - internal
+    labels:
+      - "traefik.frontend.rule=Host:pma.docker.test"
+      - "traefik.port=80"
+      - "traefik.docker.network=symfony_internal"
+      - "traefik.enable=true"
+    
+  traefik:
+    image: traefik:1.7-alpine
+    networks:
+      - internal
+    ports:
+      - "1080:80"
+    command: --docker --docker.exposedbydefault=false --api
+    labels:
+      - "traefik.frontend.rule=Host:traefik.docker.test"
+      - "traefik.port=8080"
+      - "traefik.docker.network=symfony_internal"
+      - "traefik.enable=true"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    extra_hosts:
+      - "symfony.docker.test:127.0.0.1"
+
+networks:
+  internal:
+
+volumes:
+  mysql-data:
